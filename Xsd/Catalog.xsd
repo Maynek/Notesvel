@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <xsd:element name="catalog" type="notesvelCatalogItemType" />
+	
+    <!-- catalogItem -->
+    <xsd:complexType name="notesvelCatalogItemType">
+        <xsd:sequence>
+            <xsd:element name="group" type="notesvelCatalogItemType" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="contents" type="notesvelContentsType" minOccurs="0" maxOccurs="unbounded" />
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:string" use="required" />
+        <xsd:attribute name="index" type="xsd:string" use="optional" />
+    </xsd:complexType>
+	
+    <!-- contents -->	
+    <xsd:complexType name="notesvelContentsType">  
+        <xsd:attribute name="name" type="xsd:string" use="required" />
+        <xsd:attribute name="file" type="xsd:string" use="required" />
+        <xsd:attribute name="index" type="xsd:string" use="optional" />
+    </xsd:complexType>
+	
+</xsd:schema>

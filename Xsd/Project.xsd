@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <xsd:element name="project" type="notesvelProjectType" />
+	
+    <!-- notesvelProject -->
+    <xsd:complexType name="notesvelProjectType">
+        <xsd:sequence>
+            <xsd:element name="catalog" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+            <xsd:element name="operation" type="operationType" minOccurs="1" maxOccurs="unbounded" />
+        </xsd:sequence>
+    </xsd:complexType>
+	
+    <!-- operation -->	
+    <xsd:complexType name="operationType">  
+        <xsd:sequence>
+            <xsd:element name="destination" type="xsd:string" />
+        </xsd:sequence>
+        <xsd:attribute name="id" type="xsd:string" use="required" />
+    </xsd:complexType>
+	
+</xsd:schema>
