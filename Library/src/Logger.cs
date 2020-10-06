@@ -2,6 +2,8 @@
 // (c) 2020 Ada Maynek
 // This software is released under the MIT License.
 //********************************
+using System.Data;
+
 namespace Maynek.Notesvel.Library
 {
     public enum LogLevel : int
@@ -18,6 +20,12 @@ namespace Maynek.Notesvel.Library
 
     public class Logger
     {
+        public static Logger Instance { get; private set; } = null;
+        public static void SetInstance(Logger logger)
+        {
+            Logger.Instance = logger;
+        }
+        
         //================================
         // Fields
         //================================

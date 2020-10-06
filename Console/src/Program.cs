@@ -3,12 +3,10 @@
 // This software is released under the MIT License.
 //********************************
 using System;
-using System.IO;
-using System.Reflection;
-using System.Resources;
-using System.Runtime.InteropServices;
 using Maynek.Command;
 using Maynek.Notesvel.Library;
+using Maynek.Notesvel.Library.Executers;
+using Maynek.Notesvel.Library.Xml;
 
 namespace Maynek.Notesvel.Console
 {
@@ -18,108 +16,45 @@ namespace Maynek.Notesvel.Console
 
         static int Main(string[] args)
         {
-            var param = GetParameter(args);
-            if (param == null) return 1;
-
-            var logger = new Logger();
-            logger.Handler += Print;
-
-            var setting = GetProject(param, logger);
-            if (setting == null) return 1;
-
-            var catalog = GetCatalog(param, setting, logger);
-            if (catalog == null) return 1;
-
-            if (!Run(setting, catalog, logger)) return 1;
-
-            return 0;
-        }
-
-        static Parameter GetParameter(string[] args)
-        {
+            // Get commandline parameters.
             var parameter = Parameter.CreateParameter(args);
-            if (parameter == null) return null;
+            if (parameter == null) return 1;
 
             Writer.EnabledDetail = parameter.ViewDetail;
 
-            foreach (string message in parameter.ParseMessageList)
+            Print(LogLevel.Information, "-------- Parameter --------");
+            Print(LogLevel.Information, parameter?.ToString());
+
+
+            // Setup Notevel's Logger.
+            var logger = new Logger();
+            logger.Handler += Print;
+            Logger.SetInstance(logger);
+
+            // Setup Notesvel's Builder.
+            var builder = new XmlBuilder()
             {
-                Print(LogLevel.Information, message);
-            }
-
-            Print(LogLevel.Trace, "[Parameter]");
-            Print(LogLevel.Trace, parameter?.ToString());
-
-            return parameter;
-        }
-
-        static Project GetProject(Parameter param, Logger logger)
-        {
-            Project project = null;
-
-            if (File.Exists(param.Project))
-            {
-                var loader = new XmlProjectLoader()
-                {
-                    Logger = logger,
-                    TargetPath = param.Project,
-                    SchemaPath = param.ProjectSchema
-                };
-
-                try
-                {
-                    project = loader.Load();
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
-                
-                if (project != null)
-                {
-                    Print(LogLevel.Trace, "[Project]");
-                    Print(LogLevel.Trace, project?.ToString());
-                }
-            }                 
-
-            return project;
-        }
-
-        static Catalog GetCatalog(Parameter param, Project setting, Logger logger)
-        {
-            Catalog catalog = null;
-
-            if (File.Exists(setting.CatalogFilePath))
-            {
-                var loader = new XmlCatalogLoader()
-                {
-                    Logger = logger,
-                    TargetPath = setting.CatalogFilePath,
-                    SchemaPath = param.CatalogSchema,
-                };
-
-                catalog = loader.Load();
-
-                Print(LogLevel.Trace, "[Catalog]");
-                Print(LogLevel.Trace, catalog?.ToString());
-            }
-
-            return catalog;
-        }
-
-        static bool Run(Project setting, Catalog catalog, Logger logger)
-        {
-            var builder = new Builder()
-            {
-                Logger = logger,
-                Setting = setting,
-                Catalog = catalog
+                ProjectFile = parameter.Project,
+                ProjectSchema = parameter.ProjectSchema,
+                CatalogSchema = parameter.CatalogSchema
             };
-            builder.Run();
+            builder.Executers.Add(new CommonExecuter("narou"));
 
-            return true;
+            // Run Notesvel's Builder.
+            try
+            {
+                builder.Run();
+            }
+            catch (Exception e)
+            {
+                Print(LogLevel.Critical, e.Message);
+                return 1;
+
+            }
+            
+            return 0;
         }
-
+       
         static void Print(LogLevel level, string value)
         {
             if (value != null)

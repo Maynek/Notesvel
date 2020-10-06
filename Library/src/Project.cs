@@ -23,8 +23,9 @@ namespace Maynek.Notesvel.Library
         public string SourceDirectory { get; set; }
         public string WorkDirectory { get; set; } = Project.DEFAULT_WORK_DIR;
         public string ProjectFilePath { get; set; }
-        public string CatalogFilePath { get; set; }
+        public string CatalogFile { get; set; }
 
+        public Catalog Catalog { get; set; }
         public Dictionary<string, Operation> Operations { get; private set; }
             = new Dictionary<string, Operation>();
 
@@ -40,7 +41,7 @@ namespace Maynek.Notesvel.Library
             b.Append("SourceDirectory=" + this.SourceDirectory + Environment.NewLine);
             b.Append("WorkDirectory=" + this.WorkDirectory + Environment.NewLine);
             b.Append("ProjectFilePath=" + this.ProjectFilePath + Environment.NewLine);
-            b.Append("CatalogFilePath=" + this.CatalogFilePath + Environment.NewLine);
+            b.Append("CatalogFilePath=" + this.CatalogFile + Environment.NewLine);
 
             foreach (var op in this.Operations.Values)
             {

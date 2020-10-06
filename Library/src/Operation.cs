@@ -13,7 +13,18 @@ namespace Maynek.Notesvel.Library
         //================================
         // Properties
         //================================
-        public string Id { get; set; }
+        public readonly Project Owner = null;
+        public readonly string Id;
         public string DestinationDirectory { get; set; }
+
+        //================================
+        // Constructor
+        //================================
+        private Operation() { }
+        public Operation(Project owner, string id)
+        {
+            this.Owner = owner;
+            this.Id = id;
+        }
     }
 }

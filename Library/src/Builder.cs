@@ -2,153 +2,110 @@
 // (c) 2020 Ada Maynek
 // This software is released under the MIT License.
 //********************************
+using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 
 namespace Maynek.Notesvel.Library
 {
-	public class Builder
-	{
-		//================================
-		// Constants
-		//================================
-		private const string TagSearchPattern = @"<%(?<SCRIPT>.*?)%>";
-		private const RegexOptions TagSearchOption = RegexOptions.Singleline;
-		private const string WordPattern = @"(?<WORD>.+?)\((?<RUBY>.*?)\)";
-		private const string WordReplace = @"｜${WORD}《${RUBY}》";
-		private const RegexOptions WordOption = RegexOptions.Singleline;
-
-
-		//================================
-		// Fields
-		//================================
-		private readonly Regex TagRegex = new Regex(TagSearchPattern, TagSearchOption);
-		private readonly Regex WordRegex = new Regex(WordPattern, WordOption);
-
-
-		//================================
-		// Properties
-		//================================
-		public Logger Logger { get; set; } = null;
-		public Project Setting { get; set; } = null;
-		public Catalog Catalog { get; set; } = null;
-
-
-		//================================
-		// Methods
-		//================================
-		public void Run()
-		{
-			if (this.Setting == null)
+    public class Builder
+    {
+        //================================
+        // Internal Classes
+        //================================
+        public class ExecuterDictionay : Dictionary<string, IExecuter>
+        {
+            public void Add(IExecuter value)
             {
-				throw new NotesvelException();
+                this.Add(value.GetId(), value);
+            }
+        }
+
+
+        //================================
+        // Fields
+        //================================
+        public ExecuterDictionay Executers { get; private set; } = new ExecuterDictionay();
+
+
+        //================================
+        // Properties
+        //================================
+        protected Logger Logger { get { return Logger.Instance; } }
+        public Project Project { get; set; } = null;
+
+
+        //================================
+        // Methods
+        //================================
+        public virtual void OnLoadProject() { }
+
+        public virtual void Run()
+        {
+            if (this.Project == null)
+            {
+                this.OnLoadProject();
             }
 
-			if (this.Catalog == null)
+            if (this.Project == null) throw new NotesvelException();
+            if (this.Project.Catalog == null) throw new NotesvelException();
+
+            this.RunPreprocess();
+
+            this.RunOperation();
+        }
+        
+        //-------- Preprocess --------
+        private void RunPreprocess()
+        {
+            if (!Directory.Exists(this.Project.WorkDirectory))
             {
-				throw new NotesvelException();
-			}
+                var info = Directory.CreateDirectory(this.Project.WorkDirectory);
+                info.Attributes |= FileAttributes.Hidden;
+            }
 
-			this.RunPreprocess();
+            this.RunPreprocessInternal(this.Project.Catalog.Items, "c");
+        }
 
-			this.RunOperation();
-		}
+        private void RunPreprocessInternal(CatalogItemList items, string fileBase)
+        {
+            foreach (var item in items)
+            {
+                var newFileBase = fileBase + "_" + item.Index.ToString();
 
-		//-------- Preprocess --------
-		private void RunPreprocess()
-		{
-			if (!Directory.Exists(this.Setting.WorkDirectory))
-			{
-				var info = Directory.CreateDirectory(this.Setting.WorkDirectory);
-				info.Attributes |= FileAttributes.Hidden;
-			}
+                if (item is Contents contents)
+                {
+                    contents.WorkFile = newFileBase + ".nvw";
+                    this.CreateWorkFile(contents);
+                }
+                else
+                {
+                    this.RunPreprocessInternal(item.Items, newFileBase);
+                }
+            }
+        }
 
-			this.RunPreprocessInternal(this.Catalog.Items, "c");
-		}
+        private void CreateWorkFile(Contents contents)
+        {
+            var contentsPath = Path.Combine(this.Project.SourceDirectory, contents.File);
+            var workPath = Path.Combine(this.Project.WorkDirectory, contents.WorkFile);
 
-		private void RunPreprocessInternal(CatalogItemList items, string fileBase)
-		{
-			foreach (var item in items)
-			{
-				var newFileBase = fileBase + "_" + item.Index.ToString();
+            File.Copy(contentsPath, workPath, true);
+        }
 
-				if (item is Contents contents)
-				{
-					contents.WorkFile = newFileBase + ".nvw";
-					this.CreateWorkFile(contents);
-				}
-				else
-				{
-					this.RunPreprocessInternal(item.Items, newFileBase);
-				}
-			}
-		}
+        //-------- Operation --------
+        private void RunOperation()
+        {
+            foreach (var operation in this.Project.Operations.Values)
+            {
+                if (!this.Executers.ContainsKey(operation.Id))
+                {
+                    this.Logger?.W("Unkonw Operation. Id = " + operation.Id);
+                    continue;
+                }
 
-		private void CreateWorkFile(Contents contents)
-		{
-			var contentsPath = Path.Combine(this.Setting.SourceDirectory, contents.File);
-			var workPath = Path.Combine(this.Setting.WorkDirectory, contents.WorkFile);
-
-			File.Copy(contentsPath, workPath, true);
-		}
-
-		//-------- Operation --------
-		private void RunOperation()
-		{
-			foreach (var op in this.Setting.Operations.Values)
-			{
-				var sd = Path.Combine(this.Setting.RootDirectory, op.DestinationDirectory);
-				if (!Directory.Exists(sd))
-				{
-					Directory.CreateDirectory(sd);
-				}
-
-				this.OperateItem(this.Catalog, sd);
-			}
-		}
-
-		private void OperateItem(CatalogItem item, string dir)
-		{
-			if (item is Contents contents)
-			{
-				this.OperateContents(contents, dir);
-			}
-			else
-			{
-				foreach (var childItem in item.Items)
-				{
-					this.OperateItem(childItem, dir);
-				}
-			}
-		}
-
-		private void OperateContents(Contents contents, string dir)
-		{		
-			var srcText = string.Empty;
-			var srcFile = Path.Combine(this.Setting.WorkDirectory, contents.WorkFile);
-			using (var reader = new StreamReader(srcFile))
-			{
-				srcText = reader.ReadToEnd();
-			}
-
-			var dstText = this.TagRegex.Replace(srcText, this.TagEvaluator);
-			var dstFile = Path.Combine(dir, contents.WorkFile);
-			using (var writer = new StreamWriter(dstFile))
-			{
-				writer.Write(dstText);
-			}
-		}
-
-		private string TagEvaluator(Match match)
-		{
-			return this.ResolveScript(match.Groups["SCRIPT"].ToString());
-		}
-
-		//-------- Resolve --------
-		private string ResolveScript(string script)
-		{
-			return this.WordRegex.Replace(script, WordReplace);
-		}
-	}
+                this.Executers[operation.Id].Execute(operation);
+            }
+        }
+    }
 }
 
