@@ -62,7 +62,7 @@ namespace Maynek.Notesvel.Library
             var b = new StringBuilder();
             var space = this.GetSpace();
 
-            b.Append(space + "Group(Name=" + this.Name + ")" + Environment.NewLine);
+            b.AppendLine(space + "Group(Name=" + this.Name + ")");
             b.Append(this.ItemsToString());
 
             return b.ToString();
@@ -87,8 +87,8 @@ namespace Maynek.Notesvel.Library
             var b = new StringBuilder();
             var space = this.GetSpace();
 
-            b.Append(space + "Contents(Name=" + this.Name + ")" + Environment.NewLine);
-            b.Append(space + "  File=" + this.File + Environment.NewLine);
+            b.AppendLine(space + "Contents(Name=" + this.Name + ")");
+            b.AppendLine(space + "  File=" + this.File);
 
             return b.ToString();
         }

@@ -23,9 +23,9 @@ namespace Maynek.Notesvel.Library
         {
             var b = new StringBuilder();
 
-            b.Append("Name=" + this.Name + Environment.NewLine);
+            b.AppendLine("Name=" + this.Name);
 
-            b.Append("Items" + Environment.NewLine);
+            b.AppendLine("Items");
             foreach (var item in this.Items)
             {
                 b.Append(item.ToString());

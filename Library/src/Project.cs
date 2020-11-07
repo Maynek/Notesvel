@@ -37,16 +37,16 @@ namespace Maynek.Notesvel.Library
         {
             var b = new StringBuilder();
 
-            b.Append("RootDirectory=" + this.RootDirectory + Environment.NewLine);
-            b.Append("SourceDirectory=" + this.SourceDirectory + Environment.NewLine);
-            b.Append("WorkDirectory=" + this.WorkDirectory + Environment.NewLine);
-            b.Append("ProjectFilePath=" + this.ProjectFilePath + Environment.NewLine);
-            b.Append("CatalogFilePath=" + this.CatalogFile + Environment.NewLine);
+            b.AppendLine("RootDirectory=" + this.RootDirectory);
+            b.AppendLine("SourceDirectory=" + this.SourceDirectory);
+            b.AppendLine("WorkDirectory=" + this.WorkDirectory);
+            b.AppendLine("ProjectFilePath=" + this.ProjectFilePath);
+            b.AppendLine("CatalogFilePath=" + this.CatalogFile);
 
             foreach (var op in this.Operations.Values)
             {
-                b.Append("Operation(Id=" + op.Id + ")" + Environment.NewLine);
-                b.Append("  DestinationDirectory=" + op.DestinationDirectory + Environment.NewLine);
+                b.AppendLine("Operation(Id=" + op.Id + ")");
+                b.AppendLine("  DestinationDirectory=" + op.DestinationDirectory);
             }
             
             return b.ToString();
