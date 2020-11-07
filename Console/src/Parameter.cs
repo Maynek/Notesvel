@@ -91,11 +91,11 @@ namespace Maynek.Notesvel.Console
         {
             var b = new StringBuilder();
 
-            b.Append("SettingRoot=" + this.SettingRoot + Environment.NewLine);
-            b.Append("Project=" + this.Project + Environment.NewLine);
-            b.Append("ProjectSchema=" + this.ProjectSchema + Environment.NewLine);
-            b.Append("CatalogSchema=" + this.CatalogSchema + Environment.NewLine);
-            b.Append("ViewDetail=" + this.ViewDetail.ToString() + Environment.NewLine);
+            b.AppendLine("SettingRoot=" + this.SettingRoot);
+            b.AppendLine("Project=" + this.Project);
+            b.AppendLine("ProjectSchema=" + this.ProjectSchema);
+            b.AppendLine("CatalogSchema=" + this.CatalogSchema);
+            b.AppendLine("ViewDetail=" + this.ViewDetail.ToString());
 
             return b.ToString();
         }
