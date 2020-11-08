@@ -12,11 +12,11 @@ namespace Maynek.Notesvel.Library
         //================================
         // Internal Classes
         //================================
-        public class ExecuterDictionay : Dictionary<string, IExecuter>
+        public class ExecuterDictionay : Dictionary<string, ExecuterBase>
         {
-            public void Add(IExecuter value)
+            public void Add(ExecuterBase executer)
             {
-                this.Add(value.GetId(), value);
+                this.Add(executer.Id, executer);
             }
         }
 

@@ -38,7 +38,7 @@ namespace Maynek.Notesvel.Console
                 ProjectSchema = parameter.ProjectSchema,
                 CatalogSchema = parameter.CatalogSchema
             };
-            builder.Executers.Add(new CommonExecuter("narou"));
+            builder.Executers.Add(new WebNovelExecuter("narou"));
 
             // Run Notesvel's Builder.
             try
