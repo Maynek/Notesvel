@@ -3,42 +3,46 @@
 // This software is released under the MIT License.
 //********************************
 using System;
-using Maynek.Command;
 using Maynek.Notesvel.Library;
-using Maynek.Notesvel.Library.Executers;
+using Maynek.Notesvel.Library.ExecuterImpl;
 using Maynek.Notesvel.Library.Xml;
 
 namespace Maynek.Notesvel.Console
 {
     class Program
     {
-        static readonly Writer Writer = new Writer() { EnabledWrite = true };
+        static Parameter Parameter;
+        static LogLevel LogLevel = LogLevel.Warning;
 
         static int Main(string[] args)
         {
             // Get commandline parameters.
-            var parameter = Parameter.CreateParameter(args);
-            if (parameter == null) return 1;
+            Program.Parameter = Parameter.CreateParameter(args);
+            if (Program.Parameter == null) return 1;
 
-            Writer.EnabledDetail = parameter.ViewDetail;
+            if (!LogLevel.TryParse(Program.Parameter.LogLevel, out Program.LogLevel))
+            {
+                Program.LogLevel = LogLevel.Warning;
+            }
 
-            Print(LogLevel.Information, "-------- Parameter --------");
-            Print(LogLevel.Information, parameter?.ToString());
-
+            Print(LogLevel.Debug, "-------- Parameter --------");
+            Print(LogLevel.Debug, Program.Parameter?.ToString());
 
             // Setup Notevel's Logger.
-            var logger = new Logger();
-            logger.Handler += Print;
-            Logger.SetInstance(logger);
+            Logger.LoggingHandler += Print;
 
             // Setup Notesvel's Builder.
             var builder = new XmlBuilder()
             {
-                ProjectFile = parameter.Project,
-                ProjectSchema = parameter.ProjectSchema,
-                CatalogSchema = parameter.CatalogSchema
+                ProjectFilePath = Program.Parameter.ProjectFileName,
+                OutputDirectory = Program.Parameter.OutputDirectory,
+                ProjectSchemaPath = Program.Parameter.ProjectSchema,
+                CatalogSchemaPath = Program.Parameter.CatalogSchema,
+                Intermediates = Program.Parameter.Intermediates,
+                SkipSchemeValidation = Program.Parameter.SkipSchemeValidation,
             };
-            builder.Executers.Add(new WebNovelExecuter("narou"));
+            builder.AddVariables(Program.Parameter.Variables);
+            builder.Executers.Add(new NovelSiteExecuter("narou"));
 
             // Run Notesvel's Builder.
             try
@@ -49,7 +53,6 @@ namespace Maynek.Notesvel.Console
             {
                 Print(LogLevel.Critical, e.Message);
                 return 1;
-
             }
             
             return 0;
@@ -57,27 +60,21 @@ namespace Maynek.Notesvel.Console
        
         static void Print(LogLevel level, string value)
         {
-            if (value != null)
+            if (value == null)
             {
-                switch (level)
-                {
-                    case LogLevel.Critical:
-                    case LogLevel.Error:
-                    case LogLevel.Warning:
-                        Writer.Write(value);
-                        break;
-
-                    case LogLevel.Information:
-                        Writer.WriteDetail(value);
-                        break;
-
-                    case LogLevel.Debug:
-                    case LogLevel.Trace:
-                        Writer.WriteDebug(value);
-                        break;
-                }
+                return;
             }
-        }
 
+            if (!Program.Parameter.ViewDetail && (level < LogLevel.Warning))
+            {
+                return;
+            }
+            else if (level < Program.LogLevel)
+            {
+                return;
+            }
+
+            System.Console.WriteLine(value);
+        }
     }
 }

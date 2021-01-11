@@ -2,10 +2,10 @@
 // (c) 2020 Ada Maynek
 // This software is released under the MIT License.
 //********************************
-using System.Data;
-
 namespace Maynek.Notesvel.Library
 {
+    public delegate void LoggingHandler(LogLevel level, string value);
+
     public enum LogLevel : int
     {
         Trace,
@@ -15,59 +15,84 @@ namespace Maynek.Notesvel.Library
         Error,
         Critical,
     }
-
-    public delegate void LoggingHandler(LogLevel level, string value);
-
+       
     public class Logger
     {
-        public static Logger Instance { get; private set; } = null;
-        public static void SetInstance(Logger logger)
-        {
-            Logger.Instance = logger;
-        }
-        
         //================================
         // Fields
         //================================
-        public event LoggingHandler Handler;
+        private static Logger Instance = null;
+        private event LoggingHandler Handler;
 
 
         //================================
-        // Methods
+        // Properties
         //================================
-        public void Write(LogLevel level, string value)
+        public static LoggingHandler LoggingHandler
         {
-            this.Handler?.Invoke(level, value);
+            get
+            {
+                return Logger.GetInstance().Handler;
+            }
+
+            set
+            {
+                Logger.GetInstance().Handler = value;
+            }
         }
 
-        public void T(string value)
+        //================================
+        // Constructor
+        //================================
+        private Logger(){ }
+
+
+        //================================
+        // Static Methods
+        //================================
+        public static Logger GetInstance()
         {
-            this.Write(LogLevel.Trace, value);
+            if (Logger.Instance == null)
+            {
+                Logger.Instance = new Logger();
+            }
+
+            return Logger.Instance;
         }
 
-        public void D(string value)
+        public static void Write(LogLevel level, string value)
         {
-            this.Write(LogLevel.Debug, value);
+            Logger.GetInstance().Handler?.Invoke(level, value);
         }
 
-        public void I(string value)
+        public static void T(string value)
         {
-            this.Write(LogLevel.Information, value);
+            Logger.Write(LogLevel.Trace, value);
         }
 
-        public void W(string value)
+        public static void D(string value)
         {
-            this.Write(LogLevel.Warning, value);
+            Logger.Write(LogLevel.Debug, value);
         }
 
-        public void E(string value)
+        public static void I(string value)
         {
-            this.Write(LogLevel.Error, value);
+            Logger.Write(LogLevel.Information, value);
         }
 
-        public void C(string value)
+        public static void W(string value)
         {
-            this.Write(LogLevel.Critical, value);
+            Logger.Write(LogLevel.Warning, value);
+        }
+
+        public static void E(string value)
+        {
+            Logger.Write(LogLevel.Error, value);
+        }
+
+        public static void C(string value)
+        {
+            Logger.Write(LogLevel.Critical, value);
         }
     }
 }

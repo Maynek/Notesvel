@@ -5,11 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using Maynek.Command;
+using Maynek.Notesvel.Library.Xml;
 
 namespace Maynek.Notesvel.Console
 {
@@ -22,11 +21,17 @@ namespace Maynek.Notesvel.Console
         // Properties
         //================================
         public List<string> ParseMessageList { get; } = new List<string>();
-        public string SettingRoot { get; set; } = string.Empty;
-        public string Project { get; set; } = string.Empty;
-        public string ProjectSchema { get; set; } = string.Empty;
-        public string CatalogSchema { get; set; } = string.Empty;
+        public string SettingRoot { get; private set; } = string.Empty;
+        public string ProjectFileName { get; private set; } = string.Empty;
+        public string OutputDirectory { get; private set; } = string.Empty;
+        public Variables Variables { get; } = new Variables();
+        public string ProjectSchema { get; private set; } = string.Empty;
+        public string CatalogSchema { get; private set; } = string.Empty;
         public bool ViewDetail { get; set; } = false;
+        
+        public string LogLevel { get; set; } = string.Empty;
+        public string Intermediates { get; set; } = string.Empty;
+        public bool SkipSchemeValidation { get; set; } = false;
 
 
         //================================
@@ -43,9 +48,18 @@ namespace Maynek.Notesvel.Console
             {
                 if (args.Length > 0)
                 {
-                    parameter.Project = e.Args[0];
+                    parameter.ProjectFileName = e.Args[0];
                 }
             };
+
+            parser.AddOptionDefinition(new OptionDefinition("-o", "--output")
+            {
+                Type = OptionType.RequireValue,
+                EventHandler = delegate (object sender, OptionEventArgs e)
+                {
+                    parameter.OutputDirectory = e.Value;
+                }
+            });
 
             parser.AddOptionDefinition(new OptionDefinition("-v", "--view-detail")
             {
@@ -56,6 +70,53 @@ namespace Maynek.Notesvel.Console
                 }                
             });
 
+            parser.AddOptionDefinition(new OptionDefinition("--variable")
+            {
+                Type = OptionType.RequireValue,
+                EventHandler = delegate (object sender, OptionEventArgs e)
+                {
+                    var index = e.Value.IndexOf('=');
+                    if (index > -1)
+                    {
+                        var key = e.Value.Substring(0, index);
+                        var value = string.Empty;
+                        if (index < e.Value.Length)
+                        {
+                            value = e.Value.Substring(index + 1);
+                        }
+                        parameter.Variables.Add(key, value);
+                    }
+                    parameter.ViewDetail = true;
+                }
+            });
+
+            parser.AddOptionDefinition(new OptionDefinition("--log-level")
+            {
+                Type = OptionType.RequireValue,
+                EventHandler = delegate (object sender, OptionEventArgs e)
+                {
+                    parameter.LogLevel = e.Value;
+                }
+            });
+
+            parser.AddOptionDefinition(new OptionDefinition("--intermediates")
+            {
+                Type = OptionType.RequireValue,
+                EventHandler = delegate (object sender, OptionEventArgs e)
+                {
+                    parameter.Intermediates = e.Value;
+                }
+            });
+
+            parser.AddOptionDefinition(new OptionDefinition("--skip-scheme-validation")
+            {
+                Type = OptionType.NoValue,
+                EventHandler = delegate (object sender, OptionEventArgs e)
+                {
+                    parameter.SkipSchemeValidation = true;
+                }
+            });
+
             parser.AddOptionDefinition(new OptionDefinition("-s", "--setting-root")
             {
                 Type = OptionType.RequireValue,
@@ -64,6 +125,7 @@ namespace Maynek.Notesvel.Console
                     parameter.SettingRoot = e.Value;
                 }
             });
+
 
             //-------- Parse -------- 
             parser.Parse(args);
@@ -92,10 +154,19 @@ namespace Maynek.Notesvel.Console
             var b = new StringBuilder();
 
             b.AppendLine("SettingRoot=" + this.SettingRoot);
-            b.AppendLine("Project=" + this.Project);
+            b.AppendLine("Project=" + this.ProjectFileName);
             b.AppendLine("ProjectSchema=" + this.ProjectSchema);
             b.AppendLine("CatalogSchema=" + this.CatalogSchema);
             b.AppendLine("ViewDetail=" + this.ViewDetail.ToString());
+
+            b.AppendLine("DebugLevel=" + this.LogLevel);
+            b.AppendLine("SkipSchemeValidation=" + this.SkipSchemeValidation.ToString());
+
+            b.AppendLine("Variables:");
+            foreach (var p in this.Variables)
+            {
+                b.AppendLine("Key=" + p.Key + ", Value=" + p.Value );
+            }
 
             return b.ToString();
         }

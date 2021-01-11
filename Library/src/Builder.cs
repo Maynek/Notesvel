@@ -3,18 +3,17 @@
 // This software is released under the MIT License.
 //********************************
 using System.Collections.Generic;
-using System.IO;
 
 namespace Maynek.Notesvel.Library
 {
-    public class Builder
+    public abstract class Builder
     {
         //================================
         // Internal Classes
         //================================
-        public class ExecuterDictionay : Dictionary<string, ExecuterBase>
+        public class ExecuterDictionay : Dictionary<string, Executer>
         {
-            public void Add(ExecuterBase executer)
+            public void Add(Executer executer)
             {
                 this.Add(executer.Id, executer);
             }
@@ -30,81 +29,68 @@ namespace Maynek.Notesvel.Library
         //================================
         // Properties
         //================================
-        protected Logger Logger { get { return Logger.Instance; } }
-        public Project Project { get; set; } = null;
+        public Project Project { get; private set; } = null;
 
 
         //================================
         // Methods
         //================================
-        public virtual void OnLoadProject() { }
+        protected abstract Project ReadProject();
+        protected abstract Catalog ReadCatalog(Source source);
+        protected abstract string ReadElementValue(Element element);
+        protected abstract void WriteDocument(TargetItem item, string text);
 
-        public virtual void Run()
+        protected virtual void Initialize() { return; }
+        protected virtual void ModuleBuilt() { return; }
+        protected virtual void DocumentBuilt() { return; }
+        protected virtual void Finished() { return; }
+
+        public void Run()
         {
+            Element.ReadValueHandler = this.ReadElementValue;
+
+            //Initialize
+            this.Initialize();
+
+            // Read project.
+            this.Project = this.ReadProject();
             if (this.Project == null)
             {
-                this.OnLoadProject();
+                throw new NotesvelException();
             }
 
-            if (this.Project == null) throw new NotesvelException();
-            if (this.Project.Catalog == null) throw new NotesvelException();
-
-            this.RunPreprocess();
-
-            this.RunOperation();
-        }
-        
-        //-------- Preprocess --------
-        private void RunPreprocess()
-        {
-            if (!Directory.Exists(this.Project.WorkDirectory))
+            // Read sources.
+            foreach (var s in this.Project.SourceTable)
             {
-                var info = Directory.CreateDirectory(this.Project.WorkDirectory);
-                info.Attributes |= FileAttributes.Hidden;
-            }
-
-            this.RunPreprocessInternal(this.Project.Catalog.Items, "c");
-        }
-
-        private void RunPreprocessInternal(CatalogItemList items, string fileBase)
-        {
-            foreach (var item in items)
-            {
-                var newFileBase = fileBase + "_" + item.Index.ToString();
-
-                if (item is Contents contents)
+                var catalog = this.ReadCatalog(s);
+                if (catalog != null)
                 {
-                    contents.WorkFile = newFileBase + ".nvw";
-                    this.CreateWorkFile(contents);
-                }
-                else
-                {
-                    this.RunPreprocessInternal(item.Items, newFileBase);
+                    this.Project.AddCatalog(catalog);
                 }
             }
-        }
 
-        private void CreateWorkFile(Contents contents)
-        {
-            var contentsPath = Path.Combine(this.Project.SourceDirectory, contents.File);
-            var workPath = Path.Combine(this.Project.WorkDirectory, contents.WorkFile);
+            // Create target table.
+            this.Project.CreateTarget();
 
-            File.Copy(contentsPath, workPath, true);
-        }
+            // Build modules.
+            this.Project.BuildModule();
+            this.ModuleBuilt();
 
-        //-------- Operation --------
-        private void RunOperation()
-        {
-            foreach (var operation in this.Project.Operations.Values)
+            // Build target.
+            foreach (var target in this.Project.Targets)
             {
-                if (!this.Executers.ContainsKey(operation.Id))
+                foreach (var item in target.Value.Items)
                 {
-                    this.Logger?.W("Unkonw Operation. Id = " + operation.Id);
-                    continue;
+                    var text = item.Content.Read();
+                    this.WriteDocument(item, text);
                 }
-
-                this.Executers[operation.Id].Execute(operation);
             }
+            this.DocumentBuilt();
+
+            //Finish..
+            this.Finished();
+
+            return;
         }
     }
 }

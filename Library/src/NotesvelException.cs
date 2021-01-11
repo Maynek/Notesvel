@@ -6,6 +6,16 @@ using System;
 
 namespace Maynek.Notesvel.Library
 {
+    public class NotesvelInternalException : Exception
+    {
+        public string ReasonId { get; protected set; } = string.Empty;
+
+        public NotesvelInternalException(string reaseonId, string message) : base(message)
+        {
+            this.ReasonId = reaseonId;
+        }
+    }
+
     public class NotesvelException : Exception
     {
         public NotesvelException() : base() { }

@@ -3,35 +3,37 @@
 // This software is released under the MIT License.
 //********************************
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Maynek.Notesvel.Library
 {
-    public class Catalog : CatalogItem
+    public class CatalogTable : Table<string, Catalog> { }
+
+
+    public class Catalog : ContentGroup
     {
         //================================
-        // Constants
+        // Properties
         //================================
-        public const int MinLevel = 1;
-        
+        public string Directory { get; set; } = String.Empty;
+
 
         //================================
-        // Methods
+        // Override Methods
         //================================
         public override string ToString()
         {
-            var b = new StringBuilder();
+            var builder = new InformationBuilder();
 
-            b.AppendLine("Name=" + this.Name);
+            this.AppendInformation(builder);
 
-            b.AppendLine("Items");
-            foreach (var item in this.Items)
-            {
-                b.Append(item.ToString());
-            }
+            return builder.ToString();
+        }
 
-            return b.ToString();
+        public override void AppendInformation(InformationBuilder builder)
+        {
+            base.AppendMyInformation(builder);
+            builder.AppendIndentedLine("Directory=" + this.Directory);
+            base.AppendChildInformation(builder);
         }
     }
 }
